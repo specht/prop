@@ -18,7 +18,7 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="Proportionale Zuordnungen">
 
   <!-- iOS meta tags & icons -->
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -31,13 +31,89 @@
 
   <title>prop</title>
   <link rel="manifest" href="manifest.json">
+  <style>
+    
+    #agr_launcher {
+      position: absolute; 
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: min(36vw,36vh);
+      height: min(36vw, 36vh);
+    }
+    .icon_center {
+      border-radius: 100%; 
+      box-shadow: 0 0 min(3vw,3vh) rgba(0,0,0,0.2);
+      position: absolute; 
+      left: 0;
+      top: 0;
+      width: min(30vw,30vh);
+      height: min(30vw,30vh);
+      border: min(3vw,3vh) solid #fff;
+    }
+    .ring {
+      border-radius: 100%;
+      position: absolute;
+      left: min(1.5vw,1.5vh);
+      top: min(1.5vw,1.5vh);
+      width: min(27vw,27vh);
+      height: min(27vw,27vh);
+      padding: calc(min(3vw,3vh) - min(0.5vw,0.5vh) );
+      border: min(0.5vw,0.5vh) solid #00a4ce;
+      opacity: 0.4;
+    }
+    .ring:nth-of-type(1) { 
+      animation: psycho 3s linear infinite; 
+    }
+    .ring:nth-of-type(2) { 
+      animation: psycho 3s linear 0.2s infinite; 
+    }
+    .ring:nth-of-type(3) { 
+      animation: psycho 3s linear 0.4s infinite; 
+    }
+    @keyframes transform {
+      0%, 100% { border-radius: 63% 37% 54% 46% / 55% 48% 52% 45%; } 
+    14% { border-radius: 40% 60% 54% 46% / 49% 60% 40% 51%; } 
+    28% { border-radius: 54% 46% 38% 62% / 49% 70% 30% 51%; } 
+    42% { border-radius: 61% 39% 55% 45% / 61% 38% 62% 39%; } 
+    56% { border-radius: 61% 39% 67% 33% / 70% 50% 50% 30%; } 
+    70% { border-radius: 50% 50% 34% 66% / 56% 68% 32% 44%; } 
+    84% { border-radius: 46% 54% 50% 50% / 35% 61% 39% 65%; } 
+  }
+  @keyframes psycho {
+    0% {
+      transform: rotate(0deg) scale(1) translate(0, 0);
+    }
+    
+    33% {
+      transform: rotate(360deg) scale(1) translate(min(0.8vw,0.8vh), min(0.8vw,0.8vh));
+    }
+    
+    66% {
+      transform: rotate(720deg) scale(1) translate(-min(0.8vw,0.8vh), -min(0.8vw,0.8vh));
+    }
+    
+    100% {
+      transform: rotate(1080deg) scale(1) translate(0, 0);
+    }
+  }
+  </style>
 </head>
 <body>
-  <!-- This script installs service_worker.js to provide PWA functionality to
+  <div id='agr_launcher'>
+    <!-- <img class='icon_center' src='assets/data/icon.png'/> -->
+    <div class='ring'></div>
+    <div class='ring'></div>
+    <div class='ring'></div>
+  </div>  <!-- This script installs service_worker.js to provide PWA functionality to
        application. For more information, see:
        https://developers.google.com/web/fundamentals/primers/service-workers -->
   <script>
-    var serviceWorkerVersion = null;
+    window.addEventListener('flutter-first-frame', function() {
+      console.log('removing launcher');
+      document.getElementById('agr_launcher').remove();
+    });
+    var serviceWorkerVersion = '21';
     var scriptLoaded = false;
     function loadMainDartJs() {
       if (scriptLoaded) {
