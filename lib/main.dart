@@ -7,6 +7,10 @@ import 'package:intl/intl.dart';
 import 'package:scroll_snap_list/scroll_snap_list.dart';
 import 'package:syncfusion_flutter_gauges/gauges.dart';
 
+Offset oldPanPoint = Offset.zero;
+double oldValue = 0.0;
+int lastMax = 0;
+
 void main() {
   runApp(const MyApp());
 }
@@ -65,217 +69,228 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     double size = MediaQuery.of(context).size.width * 0.38;
-    if (size > MediaQuery.of(context).size.height * 0.64)
-      size = MediaQuery.of(context).size.height * 0.64;
+    if (size > MediaQuery.of(context).size.height * 0.7)
+      size = MediaQuery.of(context).size.height * 0.7;
     return Scaffold(
-      body: Transform.translate(
-        offset: Offset(0, size * 0.05),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+      body: Center(
+        child: SizedBox(
+          width: size * 2.475,
+          height: size * 1.44,
+          child: Stack(
             children: [
-              SizedBox(
-                width: size * 2.475,
-                height: size * 0.15,
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: size * 0.1),
-                  child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Spacer(),
-                        Text("Proportionalitätsfaktor: ",
-                            style: TextStyle(fontSize: size * 0.07)),
-                        SizedBox(width: size * 0.05, height: 1),
-                        SizedBox(
-                          width: size * 0.28,
-                          child: Text(formatValue(getDisplayValue(factor)),
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: size * 0.07)),
-                        ),
-                        if (leftUnit != rightUnit)
-                          Text(" ${rightUnit} / ${leftUnit}",
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: size * 0.07)),
-                        SizedBox(width: size * 0.05, height: 1),
-                        Ink(
-                            decoration: ShapeDecoration(
-                              color:
-                                  factorLocked ? Colors.black12 : Colors.amber,
-                              shape: CircleBorder(),
-                            ),
-                            child: IconButton(
-                                iconSize: size * 0.05,
-                                onPressed: () {
-                                  setState(() {
-                                    factorLocked = !factorLocked;
-                                  });
-                                },
-                                icon: Icon(
-                                  factorLocked ? Icons.lock : Icons.lock_open,
-                                  color: factorLocked
-                                      ? Colors.black54
-                                      : Colors.white,
-                                ))),
-                        Spacer(),
-                      ]),
-                ),
-              ),
-              Row(
+              Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
+                  SizedBox(
+                    width: size * 2.475,
+                    height: size * 0.15,
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: size * 0.1),
+                      child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Spacer(),
+                            Text("Proportionalitätsfaktor: ",
+                                style: TextStyle(fontSize: size * 0.07)),
+                            SizedBox(width: size * 0.05, height: 1),
+                            SizedBox(
+                              width: size * 0.45,
+                              child: Text(formatValue(factor),
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: size * 0.07)),
+                            ),
+                            if (leftUnit != rightUnit)
+                              Text(" ${rightUnit} / ${leftUnit}",
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: size * 0.07)),
+                            SizedBox(width: size * 0.05, height: 1),
+                            Ink(
+                                decoration: ShapeDecoration(
+                                  color: factorLocked
+                                      ? Colors.black12
+                                      : Colors.green,
+                                  shape: CircleBorder(),
+                                ),
+                                child: IconButton(
+                                    iconSize: size * 0.07,
+                                    onPressed: () {
+                                      setState(() {
+                                        factorLocked = !factorLocked;
+                                      });
+                                    },
+                                    icon: Icon(
+                                      factorLocked
+                                          ? Icons.lock
+                                          : Icons.lock_open,
+                                      color: factorLocked
+                                          ? Colors.black54
+                                          : Colors.white,
+                                    ))),
+                            Spacer(),
+                          ]),
+                    ),
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      controlledGauge(size, x, leftUnit, true, (v) {
-                        setState(() {
-                          x = v;
-                          if (x < 0.01) x = 0.01;
-                          if (x > 10000.0) x = 10000.0;
-                          if (factorLocked)
-                            y = getDisplayValue(x) * factor;
-                          else {
-                            factor = getDisplayValue(
-                                getDisplayValue(y) / getDisplayValue(x));
-                            if (factor < 0.0001) {
-                              x = getDisplayValue(y) / 0.0001;
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          controlledGauge(size, x, leftUnit, true, (v) {
+                            setState(() {
+                              x = v;
                               if (x < 0.01) x = 0.01;
                               if (x > 10000.0) x = 10000.0;
-                              factor = getDisplayValue(
-                                  getDisplayValue(y) / getDisplayValue(x));
-                            }
-                          }
-                        });
-                      }),
-                      Padding(
-                          padding: EdgeInsets.only(
-                              bottom: size * 0.04,
-                              right: size * 0.1,
-                              left: size * 0.3),
-                          child: Text('unabhängige Größe',
-                              style: TextStyle(fontSize: size * 0.05))),
-                      Center(
-                        child: SizedBox(
-                          width: size * 1.2,
-                          height: size * 0.1,
-                          child: Padding(
-                            padding: EdgeInsets.only(
-                                left: size * 0.3, right: size * 0.1),
-                            child: ScrollSnapList(
-                              initialIndex:
-                                  availableUnits.indexOf(leftUnit).toDouble(),
-                              dynamicItemSize: false,
-                              onItemFocus: (index) {
-                                setState(() {
-                                  leftUnit = availableUnits[index];
-                                });
-                              },
-                              itemSize: size * 0.17,
-                              itemBuilder: (context, index) {
-                                bool selected =
-                                    leftUnit == availableUnits[index];
-                                return Container(
-                                  color: Colors.white10,
-                                  width: size * 0.17,
-                                  alignment: Alignment.center,
-                                  child: Text(availableUnits[index],
-                                      style: TextStyle(
-                                          color: selected
-                                              ? Colors.black
-                                              : Colors.black54,
-                                          fontSize:
-                                              size * (selected ? 0.06 : 0.06),
-                                          fontWeight: (selected
-                                              ? FontWeight.bold
-                                              : FontWeight.normal))),
-                                );
-                              },
-                              itemCount: availableUnits.length,
+                              if (factorLocked)
+                                y = getDisplayValue(x) * factor;
+                              else {
+                                factor =
+                                    getDisplayValue(y) / getDisplayValue(x);
+                                if (factor < 0.0001) {
+                                  x = getDisplayValue(y) / 0.0001;
+                                  if (x < 0.01) x = 0.01;
+                                  if (x > 10000.0) x = 10000.0;
+                                  factor = 0.0001;
+                                }
+                              }
+                            });
+                          }),
+                          Padding(
+                              padding: EdgeInsets.only(
+                                  bottom: size * 0.04,
+                                  right: size * 0.1,
+                                  left: size * 0.3),
+                              child: Text('unabhängige Größe',
+                                  style: TextStyle(fontSize: size * 0.05))),
+                          Center(
+                            child: SizedBox(
+                              width: size * 1.2,
+                              height: size * 0.1,
+                              child: Padding(
+                                padding: EdgeInsets.only(
+                                    left: size * 0.3, right: size * 0.1),
+                                child: ScrollSnapList(
+                                  initialIndex: availableUnits
+                                      .indexOf(leftUnit)
+                                      .toDouble(),
+                                  dynamicItemSize: false,
+                                  onItemFocus: (index) {
+                                    setState(() {
+                                      leftUnit = availableUnits[index];
+                                    });
+                                  },
+                                  itemSize: size * 0.17,
+                                  itemBuilder: (context, index) {
+                                    bool selected =
+                                        leftUnit == availableUnits[index];
+                                    return Container(
+                                      color: Colors.white10,
+                                      width: size * 0.17,
+                                      alignment: Alignment.center,
+                                      child: Text(availableUnits[index],
+                                          style: TextStyle(
+                                              color: selected
+                                                  ? Colors.black
+                                                  : Colors.black54,
+                                              fontSize: size *
+                                                  (selected ? 0.06 : 0.06),
+                                              fontWeight: (selected
+                                                  ? FontWeight.bold
+                                                  : FontWeight.normal))),
+                                    );
+                                  },
+                                  itemCount: availableUnits.length,
+                                ),
+                              ),
                             ),
                           ),
-                        ),
+                        ],
                       ),
-                    ],
-                  ),
-                  Column(
-                    children: [
-                      controlledGauge(size, y, rightUnit, false, (v) {
-                        setState(() {
-                          y = v;
-                          if (y < 0.01) y = 0.01;
-                          if (y > 10000.0) y = 10000.0;
-                          if (factorLocked)
-                            x = getDisplayValue(y) / factor;
-                          else {
-                            factor = getDisplayValue(
-                                getDisplayValue(y) / getDisplayValue(x));
-                            if (factor < 0.0001) {
-                              y = getDisplayValue(x) * 0.0001;
+                      Column(
+                        children: [
+                          controlledGauge(size, y, rightUnit, false, (v) {
+                            setState(() {
+                              y = v;
                               if (y < 0.01) y = 0.01;
                               if (y > 10000.0) y = 10000.0;
-                              factor = getDisplayValue(
-                                  getDisplayValue(y) / getDisplayValue(x));
-                            }
-                          }
-                        });
-                      }),
-                      Padding(
-                          padding: EdgeInsets.only(
-                              bottom: size * 0.04,
-                              left: size * 0.1,
-                              right: size * 0.3),
-                          child: Text('abhängige Größe',
-                              style: TextStyle(fontSize: size * 0.05))),
-                      Center(
-                        child: SizedBox(
-                          width: size * 1.2,
-                          height: size * 0.1,
-                          child: Padding(
-                            padding: EdgeInsets.only(
-                                left: size * 0.1, right: size * 0.3),
-                            child: ScrollSnapList(
-                              initialIndex:
-                                  availableUnits.indexOf(rightUnit).toDouble(),
-                              dynamicItemSize: false,
-                              onItemFocus: (index) {
-                                setState(() {
-                                  rightUnit = availableUnits[index];
-                                });
-                              },
-                              itemSize: size * 0.17,
-                              itemBuilder: (context, index) {
-                                bool selected =
-                                    rightUnit == availableUnits[index];
-                                return Container(
-                                  color: Colors.white10,
-                                  width: size * 0.17,
-                                  alignment: Alignment.center,
-                                  child: Text(availableUnits[index],
-                                      style: TextStyle(
-                                          color: selected
-                                              ? Colors.black
-                                              : Colors.black54,
-                                          fontSize:
-                                              size * (selected ? 0.06 : 0.06),
-                                          fontWeight: (selected
-                                              ? FontWeight.bold
-                                              : FontWeight.normal))),
-                                );
-                              },
-                              itemCount: availableUnits.length,
+                              if (factorLocked)
+                                x = getDisplayValue(y) / factor;
+                              else {
+                                factor =
+                                    getDisplayValue(y) / getDisplayValue(x);
+                                if (factor < 0.0001) {
+                                  y = getDisplayValue(x) * 0.0001;
+                                  if (y < 0.01) y = 0.01;
+                                  if (y > 10000.0) y = 10000.0;
+                                  factor = 0.0001;
+                                }
+                              }
+                            });
+                          }),
+                          Padding(
+                              padding: EdgeInsets.only(
+                                  bottom: size * 0.04,
+                                  left: size * 0.1,
+                                  right: size * 0.3),
+                              child: Text('abhängige Größe',
+                                  style: TextStyle(fontSize: size * 0.05))),
+                          Center(
+                            child: SizedBox(
+                              width: size * 1.2,
+                              height: size * 0.1,
+                              child: Padding(
+                                padding: EdgeInsets.only(
+                                    left: size * 0.1, right: size * 0.3),
+                                child: ScrollSnapList(
+                                  initialIndex: availableUnits
+                                      .indexOf(rightUnit)
+                                      .toDouble(),
+                                  dynamicItemSize: false,
+                                  onItemFocus: (index) {
+                                    setState(() {
+                                      rightUnit = availableUnits[index];
+                                    });
+                                  },
+                                  itemSize: size * 0.17,
+                                  itemBuilder: (context, index) {
+                                    bool selected =
+                                        rightUnit == availableUnits[index];
+                                    return Container(
+                                      color: Colors.white10,
+                                      width: size * 0.17,
+                                      alignment: Alignment.center,
+                                      child: Text(availableUnits[index],
+                                          style: TextStyle(
+                                              color: selected
+                                                  ? Colors.black
+                                                  : Colors.black54,
+                                              fontSize: size *
+                                                  (selected ? 0.06 : 0.06),
+                                              fontWeight: (selected
+                                                  ? FontWeight.bold
+                                                  : FontWeight.normal))),
+                                    );
+                                  },
+                                  itemCount: availableUnits.length,
+                                ),
+                              ),
                             ),
                           ),
-                        ),
+                        ],
                       ),
                     ],
                   ),
                 ],
               ),
-              Transform.translate(
-                  offset: Offset(0, -size * 0.375),
-                  child: Icon(Icons.arrow_right_alt, size: size * 0.15)),
+              Positioned(
+                  left: 0,
+                  right: 0,
+                  top: size * 0.99,
+                  child: Center(
+                      child: Icon(Icons.arrow_right_alt, size: size * 0.15))),
             ],
           ),
         ),
@@ -295,12 +310,11 @@ class _MyHomePageState extends State<MyHomePage> {
     if (exp < places.length) p = places[exp];
 
     double result = (value * p).floor().toDouble() / p;
-    developer.log('$result');
     return result;
   }
 
   String formatValue(double value) {
-    String s = value.toStringAsFixed(10).replaceAll('.', ',');
+    String s = value.toStringAsFixed(4).replaceAll('.', ',');
     s = s.replaceFirst(RegExp(r'0+$'), '');
     s = s.replaceFirst(RegExp(r',$'), '');
     return s;
@@ -320,7 +334,7 @@ class _MyHomePageState extends State<MyHomePage> {
       GestureDetector(
         onVerticalDragUpdate: (details) {
           double sign = details.delta.dy > 0 ? -1 : 1;
-          double magnitude = details.delta.dy.abs();
+          double magnitude = details.delta.dy.abs() * 500.0 / size;
           magnitude = math.pow(magnitude, 2.0).toDouble() * 0.0001;
           double dy = magnitude * sign * max;
           double newValue = value + dy;
@@ -356,76 +370,110 @@ class _MyHomePageState extends State<MyHomePage> {
       SizedBox(
         width: size,
         height: size,
-        child: SfRadialGauge(
-          // enableLoadingAnimation: true,
-          axes: <RadialAxis>[
-            RadialAxis(
-                minimum: 0,
-                maximum: max.toDouble(),
-                startAngle: 135,
-                endAngle: 405,
-                canScaleToFit: true,
-                interval: max / 10,
-                radiusFactor: 0.95,
-                labelFormat: '{value}',
-                labelsPosition: ElementsPosition.outside,
-                canRotateLabels: true,
-                ticksPosition: ElementsPosition.inside,
-                labelOffset: 25,
-                numberFormat: NumberFormat.compact(locale: 'de'),
-                minorTickStyle: MinorTickStyle(
-                    length: size * 0.01,
-                    lengthUnit: GaugeSizeUnit.logicalPixel,
-                    color: Colors.black26,
-                    thickness: size * 0.003),
-                majorTickStyle: MajorTickStyle(
-                    length: size * 0.02,
-                    lengthUnit: GaugeSizeUnit.logicalPixel,
-                    color: Colors.black45,
-                    thickness: size * 0.003),
-                minorTicksPerInterval: 9,
-                pointers: <GaugePointer>[
-                  NeedlePointer(
-                      value: displayValue,
-                      needleStartWidth: size * 0.001,
-                      needleEndWidth: size * 0.003,
-                      needleLength: size * 0.35,
-                      lengthUnit: GaugeSizeUnit.logicalPixel,
-                      knobStyle: KnobStyle(
-                        knobRadius: size * 0.02,
-                        sizeUnit: GaugeSizeUnit.logicalPixel,
-                      ),
-                      tailStyle: TailStyle(
-                          width: size * 0.005,
+        child: LayoutBuilder(builder: (context, constraints) {
+          return GestureDetector(
+            onPanUpdate: (details) {
+              if (lastMax != max) {
+                oldPanPoint = details.localPosition;
+                oldValue = value;
+                lastMax = max;
+              }
+              Offset centerOfGestureDetector =
+                  Offset(constraints.maxWidth / 2, constraints.maxHeight / 2);
+              double oldAngle =
+                  (oldPanPoint - centerOfGestureDetector).direction;
+              double newAngle =
+                  (details.localPosition - centerOfGestureDetector).direction;
+              double delta = newAngle - oldAngle;
+              if (delta.abs() > math.pi) {
+                oldPanPoint = details.localPosition;
+                oldValue = value;
+                lastMax = max;
+              }
+              while (delta < -math.pi) delta += math.pi * 2;
+              while (delta > math.pi) delta -= math.pi * 2;
+              double sign = delta > 0 ? 1 : -1;
+              double magnitude = delta.abs() * 0.212;
+              double dy = magnitude * sign * max;
+              double newValue = oldValue + dy;
+              // if (newValue > max) newValue = max.toDouble();
+              onChange(newValue);
+              // oldPanPoint = details.localPosition;
+            },
+            onPanStart: (details) {
+              oldPanPoint = details.localPosition;
+              oldValue = value;
+              lastMax = max;
+            },
+            child: SfRadialGauge(
+              enableLoadingAnimation: true,
+              axes: <RadialAxis>[
+                RadialAxis(
+                    minimum: 0,
+                    maximum: max.toDouble(),
+                    startAngle: 135,
+                    endAngle: 405,
+                    // canScaleToFit: true,
+                    interval: max / 10,
+                    radiusFactor: 0.95,
+                    labelFormat: '{value}',
+                    labelsPosition: ElementsPosition.outside,
+                    canRotateLabels: true,
+                    ticksPosition: ElementsPosition.inside,
+                    labelOffset: 25,
+                    numberFormat: NumberFormat.compact(locale: 'de'),
+                    minorTickStyle: MinorTickStyle(
+                        length: size * 0.01,
+                        lengthUnit: GaugeSizeUnit.logicalPixel,
+                        color: Colors.black26,
+                        thickness: size * 0.003),
+                    majorTickStyle: MajorTickStyle(
+                        length: size * 0.02,
+                        lengthUnit: GaugeSizeUnit.logicalPixel,
+                        color: Colors.black45,
+                        thickness: size * 0.003),
+                    minorTicksPerInterval: 9,
+                    pointers: <GaugePointer>[
+                      NeedlePointer(
+                          value: displayValue,
+                          needleStartWidth: size * 0.001,
+                          needleEndWidth: size * 0.003,
+                          needleLength: size * 0.35,
                           lengthUnit: GaugeSizeUnit.logicalPixel,
-                          length: size * 0.1))
-                ],
-                annotations: <GaugeAnnotation>[
-                  GaugeAnnotation(
-                    angle: 90,
-                    positionFactor: 0.8,
-                    widget: Text(
-                        '${NumberFormat.compact(locale: 'de').format(displayValue)} ${unit}',
-                        textAlign: TextAlign.right,
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: size * 0.07)),
-                  ),
-                ],
-                axisLabelStyle: GaugeTextStyle(
-                    fontSize: size * 0.05, fontWeight: FontWeight.w500),
-                axisLineStyle: AxisLineStyle(
-                    thickness: size * 0.01, color: Colors.blueGrey)),
-          ],
-        ),
+                          knobStyle: KnobStyle(
+                            knobRadius: size * 0.02,
+                            sizeUnit: GaugeSizeUnit.logicalPixel,
+                          ),
+                          tailStyle: TailStyle(
+                              width: size * 0.005,
+                              lengthUnit: GaugeSizeUnit.logicalPixel,
+                              length: size * 0.1))
+                    ],
+                    annotations: <GaugeAnnotation>[
+                      GaugeAnnotation(
+                        angle: 90,
+                        positionFactor: 0.8,
+                        widget: Text(
+                            '${NumberFormat.compact(locale: 'de').format(displayValue)} ${unit}',
+                            textAlign: TextAlign.right,
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: size * 0.07)),
+                      ),
+                    ],
+                    axisLabelStyle: GaugeTextStyle(
+                        fontSize: size * 0.05, fontWeight: FontWeight.w500),
+                    axisLineStyle: AxisLineStyle(
+                        thickness: size * 0.01, color: Colors.blueGrey)),
+              ],
+            ),
+          );
+        }),
       ),
     ];
     if (!leftSide) children = children.reversed.toList();
-    return Padding(
-      padding: EdgeInsets.only(bottom: size * 0.05),
-      child: Row(
-        children: children,
-      ),
+    return Row(
+      children: children,
     );
   }
 }
