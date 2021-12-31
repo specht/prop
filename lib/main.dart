@@ -44,8 +44,8 @@ typedef ValueSetter<T> = void Function(T value);
 
 class _MyHomePageState extends State<MyHomePage> {
   double factor = 1.5;
-  double x = 3.0;
-  double y = 3.0 * 1.5;
+  double x = 0;
+  double y = 0;
   String leftUnit = 'kg';
   String rightUnit = '€';
   bool factorLocked = true;
@@ -65,6 +65,14 @@ class _MyHomePageState extends State<MyHomePage> {
     'm²',
     'l',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    factor = 1.5;
+    x = 3.0;
+    y = factor * x;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -93,14 +101,11 @@ class _MyHomePageState extends State<MyHomePage> {
                             Text("Proportionalitätsfaktor: ",
                                 style: TextStyle(fontSize: size * 0.07)),
                             SizedBox(width: size * 0.05, height: 1),
-                            SizedBox(
-                              width: size * 0.45,
-                              child: Text(formatValue(factor),
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: size * 0.07)),
-                            ),
+                            Text(formatValue(factor),
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: size * 0.07)),
                             if (leftUnit != rightUnit)
                               Text(" ${rightUnit} / ${leftUnit}",
                                   style: TextStyle(
@@ -142,15 +147,18 @@ class _MyHomePageState extends State<MyHomePage> {
                           controlledGauge(size, x, leftUnit, true, (v) {
                             setState(() {
                               x = v;
-                              if (x < 0.01) x = 0.01;
+                              if (x < 0.0) x = 0.0;
                               if (x > 10000.0) x = 10000.0;
+                              x = quantizeValue(x);
                               if (factorLocked)
-                                y = getDisplayValue(x) * factor;
+                                y = x * factor;
                               else {
-                                factor =
-                                    getDisplayValue(y) / getDisplayValue(x);
+                                if (x < 0.01) x = 0.01;
+                                x = quantizeValue(x);
+                                y = quantizeValue(y);
+                                factor = y / x;
                                 if (factor < 0.0001) {
-                                  x = getDisplayValue(y) / 0.0001;
+                                  x = quantizeValue(y) / 0.0001;
                                   if (x < 0.01) x = 0.01;
                                   if (x > 10000.0) x = 10000.0;
                                   factor = 0.0001;
@@ -182,18 +190,23 @@ class _MyHomePageState extends State<MyHomePage> {
                                       leftUnit = availableUnits[index];
                                     });
                                   },
-                                  itemSize: size * 0.17,
+                                  itemSize: size * 0.19,
                                   itemBuilder: (context, index) {
                                     bool selected =
                                         leftUnit == availableUnits[index];
                                     return Container(
-                                      color: Colors.white10,
-                                      width: size * 0.17,
+                                      decoration: BoxDecoration(
+                                          color: selected
+                                              ? Colors.black12
+                                              : Colors.white10,
+                                          borderRadius: BorderRadius.circular(
+                                              size * 0.03)),
+                                      width: size * 0.19,
                                       alignment: Alignment.center,
                                       child: Text(availableUnits[index],
                                           style: TextStyle(
                                               color: selected
-                                                  ? Colors.black
+                                                  ? Colors.black87
                                                   : Colors.black54,
                                               fontSize: size *
                                                   (selected ? 0.06 : 0.06),
@@ -214,15 +227,18 @@ class _MyHomePageState extends State<MyHomePage> {
                           controlledGauge(size, y, rightUnit, false, (v) {
                             setState(() {
                               y = v;
-                              if (y < 0.01) y = 0.01;
+                              if (y < 0.0) y = 0.0;
                               if (y > 10000.0) y = 10000.0;
+                              y = quantizeValue(y);
                               if (factorLocked)
-                                x = getDisplayValue(y) / factor;
+                                x = y / factor;
                               else {
-                                factor =
-                                    getDisplayValue(y) / getDisplayValue(x);
+                                if (x < 0.01) x = 0.01;
+                                x = quantizeValue(x);
+                                y = quantizeValue(y);
+                                factor = y / x;
                                 if (factor < 0.0001) {
-                                  y = getDisplayValue(x) * 0.0001;
+                                  y = quantizeValue(x) * 0.0001;
                                   if (y < 0.01) y = 0.01;
                                   if (y > 10000.0) y = 10000.0;
                                   factor = 0.0001;
@@ -254,18 +270,23 @@ class _MyHomePageState extends State<MyHomePage> {
                                       rightUnit = availableUnits[index];
                                     });
                                   },
-                                  itemSize: size * 0.17,
+                                  itemSize: size * 0.19,
                                   itemBuilder: (context, index) {
                                     bool selected =
                                         rightUnit == availableUnits[index];
                                     return Container(
-                                      color: Colors.white10,
-                                      width: size * 0.17,
+                                      decoration: BoxDecoration(
+                                          color: selected
+                                              ? Colors.black12
+                                              : Colors.white10,
+                                          borderRadius: BorderRadius.circular(
+                                              size * 0.03)),
+                                      width: size * 0.19,
                                       alignment: Alignment.center,
                                       child: Text(availableUnits[index],
                                           style: TextStyle(
                                               color: selected
-                                                  ? Colors.black
+                                                  ? Colors.black87
                                                   : Colors.black54,
                                               fontSize: size *
                                                   (selected ? 0.06 : 0.06),
@@ -298,18 +319,19 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  double getDisplayValue(double value) {
-    const List<int> places = [100, 100, 10, 1, 1];
+  double quantizeValue(double value) {
+    const List<double> places = [100, 100, 10, 1, 0.1];
     int exp = 0;
     int max = 1;
     while (value > max) {
       exp += 1;
       max *= 10;
     }
-    int p = 1;
+    double p = 1;
     if (exp < places.length) p = places[exp];
 
-    double result = (value * p).floor().toDouble() / p;
+    double result = (value * p).round().toDouble() / p;
+    // developer.log('quantizeValue: $value $exp $max $result');
     return result;
   }
 
@@ -320,6 +342,32 @@ class _MyHomePageState extends State<MyHomePage> {
     return s;
   }
 
+  double nextValue(double value) {
+    double result = value;
+    if (result < 10.0)
+      result = quantizeValue(value) + 0.01;
+    else if (result < 100.0)
+      result = quantizeValue(value) + 0.1;
+    else if (result < 1000.0)
+      result = quantizeValue(value) + 1.0;
+    else
+      result = quantizeValue(value) + 10.0;
+    return result;
+  }
+
+  double prevValue(double value) {
+    double result = value;
+    if (result > 1000.0)
+      result = quantizeValue(value) - 10.0;
+    else if (result > 100.0)
+      result = quantizeValue(value) - 1.0;
+    else if (result > 10.0)
+      result = quantizeValue(value) - 0.1;
+    else
+      result = quantizeValue(value) - 0.01;
+    return result;
+  }
+
   Widget controlledGauge(double size, double value, String unit, bool leftSide,
       ValueSetter<double> onChange) {
     int exp = 0;
@@ -328,16 +376,33 @@ class _MyHomePageState extends State<MyHomePage> {
       exp += 1;
       max *= 10;
     }
-    double displayValue = getDisplayValue(value);
-    String prettyValue = formatValue(displayValue);
+    // double displayValue = getDisplayValue(value);
+    String prettyValue = formatValue(value);
     List<Widget> children = [
       GestureDetector(
+        onVerticalDragStart: (details) {
+          oldPanPoint = details.localPosition;
+          oldValue = value;
+          lastMax = max;
+        },
         onVerticalDragUpdate: (details) {
-          double sign = details.delta.dy > 0 ? -1 : 1;
-          double magnitude = details.delta.dy.abs() * 500.0 / size;
-          magnitude = math.pow(magnitude, 2.0).toDouble() * 0.0001;
+          if (max != lastMax) {
+            oldPanPoint = details.localPosition;
+            oldValue = value;
+            lastMax = max;
+          }
+          Offset delta = details.localPosition - oldPanPoint;
+          double sign = delta.dy > 0 ? -1 : 1;
+          double magnitude = delta.dy.abs() * 500.0 / size;
+          // magnitude = math.pow(magnitude, 2.0).toDouble() * 0.00001;
+          // magnitude *= 0.0001;
+          magnitude /= 10;
           double dy = magnitude * sign * max;
-          double newValue = value + dy;
+          int steps = magnitude.toInt();
+          double newValue = oldValue;
+          for (int i = 0; i < steps; i++) {
+            newValue = sign == 1 ? nextValue(newValue) : prevValue(newValue);
+          }
           onChange(newValue);
         },
         child: Container(
@@ -350,20 +415,37 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
               // color: Colors.black12,
               borderRadius: BorderRadius.all(Radius.circular(size * 0.05))),
-          child: Opacity(
-            opacity: 0.4,
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: size * 0.04),
-              child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Icon(
-                      FeatherIcons.chevronUp,
-                      size: size * 0.1,
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: size * 0.04),
+            child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      child: Icon(
+                        FeatherIcons.chevronUp,
+                        size: size * 0.1,
+                        color: Colors.black38,
+                      ),
+                      onTap: () {
+                        onChange(nextValue(value));
+                      },
                     ),
-                    Icon(FeatherIcons.chevronDown, size: size * 0.1),
-                  ]),
-            ),
+                  ),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                        child: Icon(
+                          FeatherIcons.chevronDown,
+                          size: size * 0.1,
+                          color: Colors.black38,
+                        ),
+                        onTap: () {
+                          onChange(prevValue(value));
+                        }),
+                  ),
+                ]),
           ),
         ),
       ),
@@ -395,7 +477,7 @@ class _MyHomePageState extends State<MyHomePage> {
               double sign = delta > 0 ? 1 : -1;
               double magnitude = delta.abs() * 0.212;
               double dy = magnitude * sign * max;
-              double newValue = oldValue + dy;
+              double newValue = quantizeValue(oldValue + dy);
               // if (newValue > max) newValue = max.toDouble();
               onChange(newValue);
               // oldPanPoint = details.localPosition;
@@ -435,7 +517,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     minorTicksPerInterval: 9,
                     pointers: <GaugePointer>[
                       NeedlePointer(
-                          value: displayValue,
+                          value: value,
                           needleStartWidth: size * 0.001,
                           needleEndWidth: size * 0.003,
                           needleLength: size * 0.35,
@@ -453,8 +535,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       GaugeAnnotation(
                         angle: 90,
                         positionFactor: 0.8,
-                        widget: Text(
-                            '${NumberFormat.compact(locale: 'de').format(displayValue)} ${unit}',
+                        widget: Text('${formatValue(value)} ${unit}',
                             textAlign: TextAlign.right,
                             style: TextStyle(
                                 fontWeight: FontWeight.bold,
