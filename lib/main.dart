@@ -21,10 +21,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Proportionale Zuordnungen',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
+      title: 'Proportionalitätsrechner',
+      theme: ThemeData(primarySwatch: Colors.blue, fontFamily: 'Roboto'),
       home: const MyHomePage(title: 'Umrechner für proportionale Zuordnungen'),
       debugShowCheckedModeBanner: false,
     );
@@ -396,7 +394,7 @@ class _MyHomePageState extends State<MyHomePage> {
           double magnitude = delta.dy.abs() * 500.0 / size;
           // magnitude = math.pow(magnitude, 2.0).toDouble() * 0.00001;
           // magnitude *= 0.0001;
-          magnitude /= 10;
+          magnitude /= 50;
           double dy = magnitude * sign * max;
           int steps = magnitude.toInt();
           double newValue = oldValue;
